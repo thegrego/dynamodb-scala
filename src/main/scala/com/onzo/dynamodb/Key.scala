@@ -39,6 +39,11 @@ case class Key[A](name: String)(implicit val encoder: Encoder[A], val decoder: D
 case class MapKey[A](implicit val encoder: Encoder[A], val decoder: Decoder[A])
   extends KeyLike[Map[String, A]] {
   def encode(t: Map[String, A]): Map[String, AttributeValue] = {
+    /*
+      GD:CR ->
+      Seems like 'flatMap' could be used with immutable Map.
+     */
+
     val mapB = Map.newBuilder[String, AttributeValue]
     t.foreach {
       case (key, v) => mapB ++= encoder(key, v)

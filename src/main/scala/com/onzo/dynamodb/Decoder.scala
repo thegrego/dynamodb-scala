@@ -40,6 +40,13 @@ object Decoder {
     def apply(c: AttributeValue): A = f(c)
   }
 
+  /*
+    GD:CR ->
+    Change encode to decode
+
+    Conversion from string to number (i.e. _.getN.toXXX) is not safe.
+    Exception will be thrown when String is empty or null.
+   */
   implicit val decodeAttributeValue: Decoder[AttributeValue] = instance(identity)
   implicit val decodeString: Decoder[String] = instance(_.getS)
   implicit val decodeBoolean: Decoder[Boolean] = instance(_.getBOOL)
@@ -59,13 +66,12 @@ object Decoder {
                                           ): Decoder[C[A]] = instance { c =>
     import scala.collection.JavaConversions._
 
-    val list = c.getL
     val builder = cbf()
-    for {
-      e <- list
-    } yield {
-      builder += d(e)
-    }
+    /*
+      GD:CR ->
+      A bit shorter version. No sugar but still sweet I hope.
+    */
+    c.getL map {e => builder += d(e)}
     builder.result()
   }
 
@@ -84,13 +90,14 @@ object Decoder {
                                                    cbf: CanBuildFrom[Nothing, (String, V), M[String, V]]
                                                   ): Decoder[M[String, V]] = instance { c =>
     import scala.collection.JavaConversions._
-    val map = c.getM
     val builder = cbf()
-    for {
-      (k, v) <- map
-    } yield {
+    /*
+      GD:CR ->
+      Same thing as for decodeCanBuildFrom. It could be a candidate for a separate function.
+    */
+    c.getM map { case(k, v) => {
       builder += k -> d(v)
-    }
+    }}
     builder.result()
   }
 

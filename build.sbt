@@ -6,6 +6,7 @@ scalaVersion := "2.11.7"
 
 organization := "com.onzo"
 
+//GD:CR -> this should be added to scalacOptions
 lazy val compilerOptions = Seq(
   "-deprecation",
   "-encoding", "UTF-8",

@@ -52,13 +52,19 @@ object Encoder {
 
   implicit def encodeOption[A](implicit e: Encoder[A]): Encoder[Option[A]] = new Encoder[Option[A]] {
     //self =>
-    override def apply(a: Option[A]): AttributeValue = e(a.get)
+    /*
+      GD:CR ->
+      Invoking get on an Option can cause Runtime error.
+      It's safer to use map {} getOrElse in case the Option payload must be processed.
+     */
+    override def apply(a: Option[A]): AttributeValue = a.map {e(_)} getOrElse(new AttributeValue().withNULL(true))
 
     override def apply(name: String, a: Option[A]): Map[String, AttributeValue] = {
-      if(a.isDefined)
-        Map(name -> apply(a))
-      else
-        Map.empty[String,AttributeValue]
+      /*
+        GD:CR ->
+        One implementation of 'fold' on an Option is like "if empty doSth else processData"
+       */
+      a.fold {Map.empty[String,AttributeValue]} {v => Map(name -> e(v))}
     }
   }
 
@@ -66,12 +72,13 @@ object Encoder {
   implicit def encodeMapLike[M[K, +V] <: Map[K, V], V](implicit
                                                        e: Encoder[V]
                                                       ): Encoder[M[String, V]] = Encoder.instance { m =>
-    val map = m.map {
-      case (k, v) => (k, e(v))
-    }
-    import scala.collection.JavaConversions._
+    /*
+      GD:CR ->
+      Using JavaConverters is another option to process Java collections.
+     */
+    import scala.collection.JavaConverters._
 
-    new AttributeValue().withM(map)
+    new AttributeValue().withM(m.mapValues(e(_)).asJava)
   }
 
   def encodeEither[A, B](leftKey: String, rightKey: String)(implicit
